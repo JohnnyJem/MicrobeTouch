@@ -1,0 +1,10 @@
+@import url(https://fonts.googleapis.com/css?family=Roboto);
+/* these properties will apply to the body of the page */
+
+html{
+    min-height:100%;/* make it as tall as the viewport */
+    position:relative;
+}
+body{
+    height:100%;
+}
