@@ -1,4 +1,4 @@
-
+/*This is the playground that our microbes live their lives*/
 
 function setup() {
       createCanvas(720, 480);
