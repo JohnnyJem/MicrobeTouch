@@ -330,7 +330,7 @@
     }
     elt.onload = function(){
       setAttrs();
-    };
+    }
     self = addElement(elt, this);
     return self;
   };
@@ -717,7 +717,7 @@
               p5file.data = e.target.result;
               callback(p5file);
             };
-          }
+          };
           reader.onload = makeLoader(f);
 
           // Text or data?
@@ -758,7 +758,7 @@
       var callbackHandler = function() {
         callback();
         elt.removeEventListener('canplaythrough', callbackHandler);
-      };
+      }
       elt.addEventListener('canplaythrough', callbackHandler);
     }
 
@@ -986,7 +986,7 @@
       this.elt.className = c;
     }
     return this;
-  };
+  }
 
   /**
    *
@@ -1001,7 +1001,7 @@
     this.elt.className = this.elt.className.replace(regex, '');
     this.elt.className = this.elt.className.replace(/^\s+|\s+$/g, ""); //prettify (optional)
     return this;
-  };
+  }
 
   /**
    *
@@ -1685,13 +1685,13 @@
       p5.Renderer2D.prototype.loadPixels.call(this);
     }
     return this;
-  };
+  }
   p5.MediaElement.prototype.updatePixels =  function(x, y, w, h){
     if (this.loadedmetadata) { // wait for metadata
       p5.Renderer2D.prototype.updatePixels.call(this, x, y, w, h);
     }
     return this;
-  };
+  }
   p5.MediaElement.prototype.get = function(x, y, w, h){
     if (this.loadedmetadata) { // wait for metadata
       return p5.Renderer2D.prototype.get.call(this, x, y, w, h);

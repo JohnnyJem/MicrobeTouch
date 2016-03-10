@@ -1,10 +1,18 @@
 /*This is the playground that our microbes live their lives*/
 
+
+//require() is used to load a module
+//var Organism = require('./organism.js');
+
+var organisms = [];
 var microbes = [];
 var nutrients = [];
+var colors = [172,75,275,348]; //blue, green, purple, pink
 
 var microbeHead;
 var microbeTail;
+
+//var colors = [];
 
 function setup() {
       createCanvas(windowWidth, windowHeight);
@@ -12,35 +20,35 @@ function setup() {
       stroke(3);
       fill(50);
 
-    //Setup Global Variables
-    microbeHead = 20;
-    microbeTail = 80;
-
+    for(var i = 0 ; i < 25; i++){
+        addOrganism();
+    }
 }
 
 function draw() {
     frameRate(30);
-    //THE ORDER WE DRAW = THE ORDER THINGS ARE ORDERED/SET ON THE Z AXIS.
-    //TODO JUST MAKE CIRCLES INSTEAD OF WORMS
-    noFill();
-    stroke(150);
-    strokeWeight(2);
-    beginShape();
-    vertex(10, 10);
-    quadraticVertex(10, 40, 25, 25);
-    quadraticVertex(40, 10, 40, 40);
-    endShape();
+
+    for(var i = 0 ; i < organisms.length ; i++){
+        organisms[i].display();
+    }
 }
 
+function addOrganism() {
+    var organism = new Organism(Math.floor(Math.random() * (width -50)) + 50, Math.floor(Math.random() * (height-50)) + 50);
+    organisms.push(organism);
+    return organism;
+}
 function windowResized() {
     resizeCanvas(windowWidth, windowHeight);
 }
 
-
-
 function mouseClicked(){
 
 }
+
+
+
+
 
 
 
