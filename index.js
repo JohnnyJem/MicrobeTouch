@@ -1,57 +1,279 @@
-/*This is the playground that our microbes live their lives*/
-
-
-//require() is used to load a module
-//var Organism = require('./organism.js');
-
-var organisms = [];
-var microbes = [];
+/**
+ * Created by Johnny on 3/3/2016.
+ * THIS WORK IS BASED OFF OF THE SIMULATED FLOCKING EXAMPLE FOUND AT
+ * http://p5js.org/examples/examples/Simulate_Flocking.php
+ */
 var nutrients = [];
+var organisms = [];
 var colors = [172,75,275,348]; //blue, green, purple, pink
-
-var microbeHead;
-var microbeTail;
-
-//var colors = [];
+var canvas;
 
 function setup() {
-      createCanvas(windowWidth, windowHeight);
-      colorMode(HSB, 360, 100, 100);  //Mode : Hue/saturation/luminance
-      stroke(3);
-      fill(50);
-
-    for(var i = 0 ; i < 25; i++){
-        addOrganism();
+    canvas = createCanvas(window.innerWidth, window.innerHeight);
+    frameRate(30);
+    //colorMode(HSB, 360, 100, 100);  //Mode : Hue/saturation/luminance
+    // Add an initial set of organisms into the system
+    for (var i = 0; i < 10; i++) {
+        organisms[i] = new Organism(random(width), random(height));
     }
+    for(var n = 0; n < 15; n++){
+        nutrients[n] = new Nutrient(random(width), random(height));
+    }
+}
+
+window.onresize = function() {
+  canvas.size(window.innerWidth, window.innerHeight);
 }
 
 function draw() {
-    frameRate(30);
+    background(0);
+    // Run all the organisms
 
-    for(var i = 0 ; i < organisms.length ; i++){
-        organisms[i].display();
+    for (var i = 0; i < organisms.length; i++) {
+        organisms[i].run(organisms,nutrients);
+        for(var n = 0; n < nutrients.length; n++){
+            nutrients[n].run(organisms,nutrients);
+        }
     }
 }
 
-function addOrganism() {
-    var organism = new Organism(Math.floor(Math.random() * (width -50)) + 50, Math.floor(Math.random() * (height-50)) + 50);
-    organisms.push(organism);
-    return organism;
-}
-function windowResized() {
-    resizeCanvas(windowWidth, windowHeight);
+function mouseClicked() {
+    nutrients.push(new Nutrient(mouseX,mouseY));
+    nutrients.push(new Nutrient(random(mouseX+50,mouseX),random(mouseY+100,mouseY)));
+    nutrients.push(new Nutrient(random(mouseX+50,mouseX),random(mouseY+100,mouseY)));
 }
 
-function mouseClicked(){
-
+function mouseDragged() {
+    //organisms.push(new Organism(mouseX,mouseY));
 }
 
+//Organism class
+// Methods for Separation, Cohesion, Alignment added
+function Organism(x, y) {
+    this.acceleration = createVector(0, 0);
+    this.velocity = p5.Vector.random2D();
+    this.position = createVector(x, y);
+    this.x = x;
+    this.y = y;
+    this.r = 3.0;
+    this.maxspeed = 3;    // Maximum speed
+    this.maxforce = 0.05; // Maximum steering force
+    this.brightness = 70;
+    this.flashing = false;
+    this.color = colors[(Math.floor(Math.random() * colors.length) + 0)];
+    this.level = 0;
+    this.size = 2;
+}
 
+Organism.prototype.levelUp = function(levels, index){
+    this.level = this.level + levels;
+    this.flashing = true;
+    switch (this.level) {
+      case 2:
+        this.size = 3;
+        break;
+      case 4:
+        this.size = 4;
+        break;
+      case 6:
+        this.size = 5;
+        break;
+      default:
 
+    }
+    console.log(this.level);
+    if (this.level > 7) {
+      organisms.push(new Organism(this.position.x,this.position.y));
+      this.level = 0;
+      this.size = 2;
+      this.flashing = false;
+    }
+};
 
+Organism.prototype.getPosition = function(){
+  return this.position;
+};
 
+Organism.prototype.run = function(organisms,nutrients) {
+    this.flock(organisms,nutrients);
+    this.update();
+    this.borders();
+    this.render();
+};
 
+    // Forces go into acceleration
+Organism.prototype.applyForce = function(force) {
+    this.acceleration.add(force);
+};
 
+// We accumulate a new acceleration each time based on three rules
+Organism.prototype.flock = function(organisms,nutrients) {
+    var sep = this.separate(organisms); // Separation
+    var ali = this.align(organisms);    // Alignment
+    var coh = this.cohesion(organisms,nutrients); // Cohesion
 
+    // Arbitrarily weight these forces
+    sep.mult(2.5);
+    ali.mult(1.0);
+    coh.mult(1.0);
+    // Add the force vectors to acceleration
+    this.applyForce(sep);
+    this.applyForce(ali);
+    this.applyForce(coh);
+};
 
+// Method to update location
+Organism.prototype.update = function() {
+    var amplitude =  30;
+    var period = 60;
+    var x = amplitude * cos(TWO_PI * frameCount / period);
+    if (this.flashing) {
+      this.brightness = x+70;
+    }else if(!this.flashing) {
+      this.brightness = 70;
+    }
 
+    // Update velocity
+    this.velocity.add(this.acceleration);
+    // Limit speed
+    this.velocity.limit(this.maxspeed);
+    this.position.add(this.velocity);
+    // Reset acceleration to 0 each cycle
+    this.acceleration.mult(0);
+};
+
+// Draw organism
+Organism.prototype.render = function() {
+    var theta = this.velocity.heading() + radians(90);
+    var outerWidth = this.size * 4;
+    var outerHeight = this.size * 5;
+    var innerWidth = this.size * 3;
+    var innerHeight = this.size *8;
+
+    push();
+    translate(this.position.x,this.position.y);
+    rotate(theta);
+    colorMode(HSB, 360, 100, 100);
+    ellipseMode(RADIUS);
+    noStroke();
+    fill(this.color, 50, 50);
+    ellipse(0, 0, outerWidth, outerHeight);
+
+    push();
+    ellipseMode(CENTER);
+    strokeWeight(2);
+    stroke(this.color, 50, this.brightness);
+    ellipse(0, 0, innerWidth, innerHeight);
+    pop();
+    pop();
+};
+
+// Wraparound
+Organism.prototype.borders = function() {
+    if (this.position.x < -this.r) this.position.x = width + this.r;
+    if (this.position.y < -this.r) this.position.y = height + this.r;
+    if (this.position.x > width + this.r) this.position.x = -this.r;
+    if (this.position.y > height + this.r) this.position.y = -this.r;
+};
+
+// Separation
+// Method checks for nearby organisms and steers away
+Organism.prototype.separate = function(organisms) {
+    var desiredSeparation = 25*this.size;
+    var steer = createVector(0, 0);
+    var count = 0;
+    // For every boid in the system, check if it's too close
+    for (var i = 0; i < organisms.length; i++) {
+        var d = p5.Vector.dist(this.position, organisms[i].position);
+        // If the distance is greater than 0 and less than an arbitrary amount (0 when you are yourself)
+        if ((d > 0) && (d < desiredSeparation)) {
+            // Calculate vector pointing away from neighbor
+            var diff = p5.Vector.sub(this.position, organisms[i].position);
+            diff.normalize();
+            diff.div(d); // Weight by distance
+            steer.add(diff);
+            count++; // Keep track of how many
+        }
+    }
+    // Average -- divide by how many
+    if (count > 0) {
+        steer.div(count);
+    }
+
+    // As long as the vector is greater than 0
+    if (steer.mag() > 0) {
+        // Implement Reynolds: Steering = Desired - Velocity
+        steer.normalize();
+        steer.mult(this.maxspeed);
+        steer.sub(this.velocity);
+        steer.limit(this.maxforce);
+    }
+    return steer;
+};
+
+    // Alignment
+// For every nearby organisms in the system, calculate the average velocity
+Organism.prototype.align = function(organisms) {
+    var neighborDist = 100;
+    var sum = createVector(0, 0);
+    var count = 0;
+
+    for (var i = 0; i < organisms.length; i++) {
+        var d = p5.Vector.dist(this.position, organisms[i].position);
+        if ((d > 0) && (d < neighborDist) ) {
+            sum.add(organisms[i].velocity);
+            count++;
+        }
+    }
+    if (count > 0) {
+        sum.div(count);
+        sum.normalize();
+        sum.mult(this.maxspeed);
+        var steer = p5.Vector.sub(sum, this.velocity);
+        steer.limit(this.maxforce);
+        return steer;
+    }else{
+        return createVector(0, 0);
+    }
+};
+
+// Cohesion
+// For the average location (i.e. center) of all nearby organisms, calculate steering vector towards that location
+Organism.prototype.cohesion = function(organisms,nutrients) {
+    var neighborDistCheck = 100;
+    var neighborDistEat = 5;
+    var sum = createVector(0, 0); // Start with empty vector to accumulate all locations
+    var count = 0;
+    for (var i = 0; i < organisms.length; i++) {
+        for (var n = 0; n < nutrients.length; n++){
+            var d = p5.Vector.dist(this.position, nutrients[n].position);
+            // If the distance is greater than 0 and less than an arbitrary amount (0 when you are yourself)
+           if ((d > 0) && (d < neighborDistCheck)) {
+                if (nutrients[n]!=null) {
+                  sum.add(nutrients[n].position); // Add location
+                  count++;
+                  break;
+                }
+              }
+        }
+    }
+    if (count > 0) {
+        sum.div(count);
+        return this.seek(sum); // Steer towards the location
+    } else {
+        return createVector(0, 0);
+    }
+};
+
+// A method that calculates and applies a steering force towards a target
+// STEER = DESIRED MINUS VELOCITY
+Organism.prototype.seek = function(target) {
+    var desired = p5.Vector.sub(target, this.position); // A vector pointing from the location to the target
+    // Normalize desired and scale to maximum speed
+    desired.normalize();
+    desired.mult(this.maxspeed);
+    // Steering = Desired minus Velocity
+    var steer = p5.Vector.sub(desired, this.velocity);
+    steer.limit(this.maxforce); // Limit to maximum steering force
+    return steer;
+};
