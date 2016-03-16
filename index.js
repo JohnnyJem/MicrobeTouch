@@ -2,6 +2,12 @@
  * Created by Johnny on 3/3/2016.
  * THIS WORK IS BASED OFF OF THE SIMULATED FLOCKING EXAMPLE FOUND AT
  * http://p5js.org/examples/examples/Simulate_Flocking.php
+ *
+ * Please use Google Chrome to view the project! IsDownPressed does not work in firefox.
+ *
+ * Press the Spacebar to set down nutrients
+ * If you hold down your mouse button the organisms will avoid its position.
+ * When an organism first eats a nutrient it will start glowing.
  */
 var nutrients = [];
 var organisms = [];
@@ -13,7 +19,7 @@ function setup() {
     frameRate(30);
     //colorMode(HSB, 360, 100, 100);  //Mode : Hue/saturation/luminance
     // Add an initial set of organisms into the system
-    for (var i = 0; i < 10; i++) {
+    for (var i = 0; i < 5; i++) {
         organisms[i] = new Organism(random(width), random(height));
     }
     for(var n = 0; n < 15; n++){
@@ -28,7 +34,6 @@ window.onresize = function() {
 function draw() {
     background(0);
     // Run all the organisms
-
     for (var i = 0; i < organisms.length; i++) {
         organisms[i].run(organisms,nutrients);
         for(var n = 0; n < nutrients.length; n++){
@@ -37,14 +42,15 @@ function draw() {
     }
 }
 
-function mouseClicked() {
-    nutrients.push(new Nutrient(mouseX,mouseY));
-    nutrients.push(new Nutrient(random(mouseX+50,mouseX),random(mouseY+100,mouseY)));
-    nutrients.push(new Nutrient(random(mouseX+50,mouseX),random(mouseY+100,mouseY)));
-}
-
-function mouseDragged() {
-    //organisms.push(new Organism(mouseX,mouseY));
+//Pressing the spacebar will randomly place nutrients around the canvas.
+function keyPressed() {
+    if (keyCode === 32) { //32 = spacebar
+        var mousePx = random(width);
+        var mousePy = random(height);
+        nutrients.push(new Nutrient(mousePx,mousePy));
+        nutrients.push(new Nutrient(random(mousePx+50,mousePy),random(mousePy+100,mousePy)));
+        nutrients.push(new Nutrient(random(mousePx+50,mousePx),random(mousePy+100,mousePy)));
+    }
 }
 
 //Organism class
@@ -65,7 +71,9 @@ function Organism(x, y) {
     this.size = 2;
 }
 
-Organism.prototype.levelUp = function(levels, index){
+//"Level up" the organism. The higher the level the bigger the organism.
+//Once an organism reaches a certain level it splits and loses its level growth.
+Organism.prototype.levelUp = function(levels){
     this.level = this.level + levels;
     this.flashing = true;
     switch (this.level) {
@@ -81,7 +89,6 @@ Organism.prototype.levelUp = function(levels, index){
       default:
 
     }
-    console.log(this.level);
     if (this.level > 7) {
       organisms.push(new Organism(this.position.x,this.position.y));
       this.level = 0;
@@ -179,16 +186,24 @@ Organism.prototype.borders = function() {
 // Separation
 // Method checks for nearby organisms and steers away
 Organism.prototype.separate = function(organisms) {
-    var desiredSeparation = 25*this.size;
     var steer = createVector(0, 0);
     var count = 0;
     // For every boid in the system, check if it's too close
     for (var i = 0; i < organisms.length; i++) {
-        var d = p5.Vector.dist(this.position, organisms[i].position);
+        if(mouseIsPressed){ //if mouse pressed then avoid its given coordinates.
+            var desiredSeparation = 50*this.size;
+            var organismPosition = createVector(mouseX,mouseY);
+        }else{
+            var desiredSeparation = 25*this.size;
+            var organismPosition = organisms[i].position;
+
+        }
+        var d = p5.Vector.dist(this.position, organismPosition);
         // If the distance is greater than 0 and less than an arbitrary amount (0 when you are yourself)
         if ((d > 0) && (d < desiredSeparation)) {
             // Calculate vector pointing away from neighbor
-            var diff = p5.Vector.sub(this.position, organisms[i].position);
+
+            var diff = p5.Vector.sub(this.position, organismPosition);
             diff.normalize();
             diff.div(d); // Weight by distance
             steer.add(diff);
@@ -238,10 +253,9 @@ Organism.prototype.align = function(organisms) {
 };
 
 // Cohesion
-// For the average location (i.e. center) of all nearby organisms, calculate steering vector towards that location
+// For the average location (i.e. center) of all nearby nutrients, calculate steering vector towards that location.
 Organism.prototype.cohesion = function(organisms,nutrients) {
     var neighborDistCheck = 100;
-    var neighborDistEat = 5;
     var sum = createVector(0, 0); // Start with empty vector to accumulate all locations
     var count = 0;
     for (var i = 0; i < organisms.length; i++) {
@@ -253,6 +267,8 @@ Organism.prototype.cohesion = function(organisms,nutrients) {
                   sum.add(nutrients[n].position); // Add location
                   count++;
                   break;
+                 //break added so it only concentrates on the first detected
+                    // organism and doesn't get stuck choosing.
                 }
               }
         }
@@ -275,5 +291,40 @@ Organism.prototype.seek = function(target) {
     // Steering = Desired minus Velocity
     var steer = p5.Vector.sub(desired, this.velocity);
     steer.limit(this.maxforce); // Limit to maximum steering force
+    return steer;
+};
+
+//A method that is called when the user drags their mouse across the screen.
+//It checks the mouse x and y positions and steers away.
+Organism.prototype.avoidMouse = function() {
+    var desiredSeparation = 50*this.size;
+    var mousePosition = createVector(mouseX,mouseY);
+    var steer = createVector(0, 0);
+    var count = 0;
+    // For every boid in the system, check if it's too close
+        var d = p5.Vector.dist(this.position, mousePosition);
+        // If the distance is greater than 0 and less than an arbitrary amount (0 when you are yourself)
+        if ((d > 0) && (d < desiredSeparation)) {
+            // Calculate vector pointing away from neighbor
+            var diff = p5.Vector.sub(this.position, mousePosition);
+            diff.normalize();
+            diff.div(d); // Weight by distance
+            steer.add(diff);
+            count++; // Keep track of how many
+        }
+
+    // Average -- divide by how many
+    if (count > 0) {
+        steer.div(count);
+    }
+
+    // As long as the vector is greater than 0
+    if (steer.mag() > 0) {
+        // Implement Reynolds: Steering = Desired - Velocity
+        steer.normalize();
+        steer.mult(this.maxspeed);
+        steer.sub(this.velocity);
+        steer.limit(this.maxforce);
+    }
     return steer;
 };

@@ -41,7 +41,7 @@ Nutrient.prototype.checkIfEaten = function(organisms,nutrients) {
                     count++;
             }
             if (count > 0) {
-                organisms[i].levelUp(count, i);
+                organisms[i].levelUp(count);
             }
 
         }
