@@ -1,7 +1,7 @@
 Microbe Touch
 ----------------------------
-Control, nurture, and lead your microbe away from danger in a playground filled with nutrients, other microbes,
-and dangerous predators.
+A simulation playground for microbes to grow an multiply in.
+Holding down the mousebutton will cause avoidance behavior, while the spacebar adds nutrients to the environment.
 
 
 
